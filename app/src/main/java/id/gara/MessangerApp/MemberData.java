@@ -20,4 +20,12 @@ class MemberData {
     public String getColor() {
         return color;
     }
+
+    @Override
+    public String toString() {
+        return "MemberData{" +
+                "name='" + name + '\'' +
+                ", color='" + color + '\'' +
+                '}';
+    }
 }

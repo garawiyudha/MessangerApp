@@ -2,7 +2,6 @@ package id.gara.MessangerApp;
 
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ListView;
@@ -11,6 +10,7 @@ import android.widget.Toast;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaledrone.lib.Listener;
@@ -24,15 +24,13 @@ import java.util.Random;
 public class ChatActivity extends AppCompatActivity implements RoomListener {
 
     private String channelId =  "u66t3hVY7slkcYpo";
-    private String roomName = "room-test";
+    private String roomName = "observable-room";
     private EditText editText;
     private ImageButton buttonSend;
     public ListView listView;
-
     public MessageAdapter adapter;
-
-
     private Scaledrone scaledrone;
+
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -41,51 +39,75 @@ public class ChatActivity extends AppCompatActivity implements RoomListener {
         editText = findViewById(R.id.editTextMessage);
         buttonSend = findViewById(R.id.buttonSend);
         listView = findViewById(R.id.messages_view);
+        listView.setAdapter(adapter);
         MemberData data = new MemberData(getRandomName(), getRandomColor());
 
         scaledrone = new Scaledrone(channelId, data);
         scaledrone.connect(new Listener() {
             @Override
             public void onOpen() {
-                Toast.makeText(ChatActivity.this, "Scaledrone Connection Open", Toast.LENGTH_SHORT).show();
+                System.out.println("Scaledrone connection open");
                 scaledrone.subscribe(roomName, ChatActivity.this);
             }
 
             @Override
             public void onOpenFailure(Exception ex) {
-                String exception = "Failed :" + ex;
-                Toast.makeText(ChatActivity.this, exception, Toast.LENGTH_SHORT).show();
+                System.err.println(ex);
             }
 
             @Override
             public void onFailure(Exception ex) {
-                String exception = "Failed :" + ex;
-                Toast.makeText(ChatActivity.this, exception, Toast.LENGTH_SHORT).show();
+                System.err.println(ex);
             }
 
             @Override
             public void onClosed(String reason) {
-
-                Toast.makeText(ChatActivity.this, reason, Toast.LENGTH_SHORT).show();
+                System.err.println(reason);
             }
         });
 
-        buttonSend.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SendMessage();
-            }
-        });
     }
 
 
-    public void SendMessage(){
+    public void SendMessage(View view){
         String message = editText.getText().toString();
         if (message.length() >0){
             scaledrone.publish(roomName, message);
             editText.getText().clear();
         }
     }
+
+    @Override
+    public void onOpen(Room room) {
+        System.out.println("Conneted to room");
+    }
+
+    @Override
+    public void onOpenFailure(Room room, Exception ex) {
+        System.err.println(ex);
+    }
+
+    @Override
+    public void onMessage(Room room, JsonNode json, Member member) {
+        final ObjectMapper mapper = new ObjectMapper();
+        try {
+            final MemberData data =  mapper.treeToValue(member.getClientData(), MemberData.class);
+            boolean belongsToCurrentUser = member.getId().equals(scaledrone.getClientID());
+            final Message message = new Message(json.asText(), data, belongsToCurrentUser);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    adapter.add(message);
+                    listView.setSelection(listView.getCount() - 1);
+
+                }
+            });
+        }catch (JsonProcessingException e){
+            e.printStackTrace();
+        }
+    }
+
 
     private String getRandomName() {
         String[] adjs = {"autumn", "hidden", "bitter", "misty", "silent", "empty", "dry", "dark", "summer", "icy", "delicate", "quiet", "white", "cool", "spring", "winter", "patient", "twilight", "dawn", "crimson", "wispy", "weathered", "blue", "billowing", "broken", "cold", "damp", "falling", "frosty", "green", "long", "late", "lingering", "bold", "little", "morning", "muddy", "old", "red", "rough", "still", "small", "sparkling", "throbbing", "shy", "wandering", "withered", "wild", "black", "young", "holy", "solitary", "fragrant", "aged", "snowy", "proud", "floral", "restless", "divine", "polished", "ancient", "purple", "lively", "nameless"};
@@ -106,35 +128,4 @@ public class ChatActivity extends AppCompatActivity implements RoomListener {
         return sb.toString().substring(0, 7);
     }
 
-    @Override
-    public void onOpen(Room room) {
-        Toast.makeText(ChatActivity.this, "Connected to room", Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onOpenFailure(Room room, Exception ex) {
-        String exception = "Failed :" + ex;
-        Toast.makeText(ChatActivity.this, exception, Toast.LENGTH_SHORT).show();
-    }
-
-    @Override
-    public void onMessage(Room room, JsonNode json, Member member) {
-        final ObjectMapper mapper = new ObjectMapper();
-        try {
-            final MemberData data = mapper.treeToValue(member.getClientData(), MemberData.class);
-            boolean belongsToCurrentUser = member.getId().equals(scaledrone.getClientID());
-            final Message message = new Message(json.asText(), data, belongsToCurrentUser);
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    adapter.add(message);
-                    listView.setSelection(listView.getCount() - 1);
-
-                }
-            });
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-    }
 }

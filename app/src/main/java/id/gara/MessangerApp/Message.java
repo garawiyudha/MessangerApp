@@ -5,6 +5,9 @@ public class Message {
     private MemberData data;
     private boolean belongsToCurrentUser;
 
+    public Message(){
+    }
+
     public Message(String text, MemberData data, Boolean belongsToCurrentUser){
         this.text = text;
         this.data = data;
