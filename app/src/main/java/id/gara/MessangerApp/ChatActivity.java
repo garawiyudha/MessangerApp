@@ -5,12 +5,14 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaledrone.lib.Listener;
 import com.scaledrone.lib.Member;
 import com.scaledrone.lib.Room;
@@ -25,6 +27,10 @@ public class ChatActivity extends AppCompatActivity implements RoomListener {
     private String roomName = "room-test";
     private EditText editText;
     private ImageButton buttonSend;
+    public ListView listView;
+
+    public MessageAdapter adapter;
+
 
     private Scaledrone scaledrone;
 
@@ -34,6 +40,7 @@ public class ChatActivity extends AppCompatActivity implements RoomListener {
         setContentView(R.layout.activity_chat);
         editText = findViewById(R.id.editTextMessage);
         buttonSend = findViewById(R.id.buttonSend);
+        listView = findViewById(R.id.messages_view);
         MemberData data = new MemberData(getRandomName(), getRandomColor());
 
         scaledrone = new Scaledrone(channelId, data);
@@ -111,7 +118,23 @@ public class ChatActivity extends AppCompatActivity implements RoomListener {
     }
 
     @Override
-    public void onMessage(Room room, JsonNode message, Member member) {
+    public void onMessage(Room room, JsonNode json, Member member) {
+        final ObjectMapper mapper = new ObjectMapper();
+        try {
+            final MemberData data = mapper.treeToValue(member.getClientData(), MemberData.class);
+            boolean belongsToCurrentUser = member.getId().equals(scaledrone.getClientID());
+            final Message message = new Message(json.asText(), data, belongsToCurrentUser);
 
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    adapter.add(message);
+                    listView.setSelection(listView.getCount() - 1);
+
+                }
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 }

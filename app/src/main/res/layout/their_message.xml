@@ -14,7 +14,7 @@
         android:background="@drawable/avatar"
         android:layout_width="34dp"
         android:layout_height="34dp"
-        android:src=""/>
+        />
 
     <TextView
         android:id="@+id/name"
