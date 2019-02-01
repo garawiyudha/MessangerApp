@@ -1,5 +1,6 @@
 package id.gara.MessangerApp;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
@@ -39,8 +40,11 @@ public class ChatActivity extends AppCompatActivity implements RoomListener {
         editText = findViewById(R.id.editTextMessage);
         buttonSend = findViewById(R.id.buttonSend);
         listView = findViewById(R.id.messages_view);
+        adapter = new MessageAdapter(ChatActivity.this);
         listView.setAdapter(adapter);
-        MemberData data = new MemberData(getRandomName(), getRandomColor());
+        Intent intent = getIntent();
+        String username = intent.getStringExtra("username");
+        MemberData data = new MemberData(username, getRandomColor());
 
         scaledrone = new Scaledrone(channelId, data);
         scaledrone.connect(new Listener() {
